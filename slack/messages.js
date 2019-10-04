@@ -271,7 +271,7 @@ class TeamQuestion extends Plus1Minus1Question {
                 {
                     text: 'Choose the answer that most describes how you are feeling at this moment.',
 
-                    callback_id: CompanyQuestion.GetSurveyAction(),
+                    callback_id: TeamQuestion.GetSurveyAction(),
                     color: '#3AA3E3',
                     attachment_type: 'default',
                     actions: this.options.map(({ value, text }) => ({
