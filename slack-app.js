@@ -1,8 +1,11 @@
 const { App } = require('@slack/bolt');
-const { Response, ResponseCollection } = require('./slack/response');
+const DatabaseClient = require('./database-client');
+
+const databaseClient = new DatabaseClient();
+const { Response, ResponseCollection } = require('./slack-components/response');
 const {
     StartSurvey, MoodQuestion, WhatTeamQuestion, CompanyQuestion, TeamQuestion, IndividualQuestion,
-} = require('./slack/messages');
+} = require('./slack-components/messages');
 require('dotenv').config();
 
 // Initializes your app with your bot token and signing secret
@@ -53,16 +56,15 @@ slackApp.message('hello', async ({ message, say }) => {
     const startSurvey = new StartSurvey(userId);
     // Handle cases where user has already started a survey, or has already taken it.
 
-    // TODO uncomment this after make week
-    // if (responseCollection.hasResponse(userId)) {
-    //     const response = responseCollection.getResponse(userId);
-    //     if (response.isSubmitted()) {
-    //         say(startSurvey.getSurveyAlreadyTakenMessage());
-    //         return;
-    //     }
-    //     say(startSurvey.getSurveyAlreadyStartedMessage());
-    //     return;
-    // }
+    if (responseCollection.hasResponse(userId)) {
+        const response = responseCollection.getResponse(userId);
+        if (response.isSubmitted()) {
+            say(startSurvey.getSurveyAlreadyTakenMessage());
+            return;
+        }
+        say(startSurvey.getSurveyAlreadyStartedMessage());
+        return;
+    }
 
     ensureSurveyAnswerExists(userId);
     await say(startSurvey.getEntryMessage());
@@ -142,31 +144,33 @@ slackApp.action({ callback_id: IndividualQuestion.GetSurveyAction() }, async ({
 
     await deletePreviousSurveyQuestion(body.original_message.ts, body.channel.id);
 
-    await say('You’ve finished the survey! :tada:');
-
     const userResponse = responseCollection.getResponse(userId);
-    const submission = userResponse.submit();
-    if (submission) {
-        await say({
-            blocks: [{
-                type: 'section',
-                text: {
-                    type: 'mrkdwn',
-                    text: `Your response has been saved!\nHere’s the data that we saved from you:\`\`\`\n\n${JSON.stringify(userResponse)}\`\`\``,
-                },
-                accessory: {
-                    type: 'button',
-                    text: {
-                        type: 'plain_text',
-                        text: 'Delete this message',
-                    },
-                    style: 'danger',
-                    action_id: 'delete_message',
-                    value: 'delete',
-                },
-            }],
-        });
-    }
+
+    await databaseClient.writeResponse(userResponse);
+    say('*You’ve finished the survey!* :tada:\nYour response has been saved.');
+
+    // const submission = userResponse.submit();
+    // if (submission) {
+    //     await say({
+    //         blocks: [{
+    //             type: 'section',
+    //             text: {
+    //                 type: 'mrkdwn',
+    //                 text: `Your response has been saved!\nHere’s the data that we saved from you:\`\`\`\n\n${JSON.stringify(userResponse)}\`\`\``,
+    //             },
+    //             accessory: {
+    //                 type: 'button',
+    //                 text: {
+    //                     type: 'plain_text',
+    //                     text: 'Delete this message',
+    //                 },
+    //                 style: 'danger',
+    //                 action_id: 'delete_message',
+    //                 value: 'delete',
+    //             },
+    //         }],
+    //     });
+    // }
 });
 
 slackApp.action('delete_message', async ({ body, ack }) => {

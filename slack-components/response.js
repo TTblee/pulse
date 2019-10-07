@@ -10,6 +10,7 @@ class Response {
 
         // timer to track question time
         this.questionStartTime = null;
+        this.totalSurveyElapsedTime = null;
     }
 
     getAnswers() {
@@ -22,6 +23,16 @@ class Response {
 
     isSubmitted() {
         return this.isResponseSubmitted;
+    }
+
+    setSubmit() {
+        const startSurveyElapsedTime = this.questionTimes[Response.START_SURVEY];
+        const questionTimesList = Object.values(this.questionTimes);
+        const totalInteractionElapsedTime = questionTimesList
+            .reduce((prevValue, currentValue) => prevValue + currentValue, 0);
+
+        const totalSurveyElapsedTime = totalInteractionElapsedTime - startSurveyElapsedTime;
+        this.totalSurveyElapsedTime = totalSurveyElapsedTime;
     }
 
     async submit() {
