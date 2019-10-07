@@ -29,8 +29,8 @@ webApp.all('*', (req, res) => {
     res.status(200).sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 (async () => {
-    await webApp.listen(8080);
+    await webApp.listen(8000);
 
     // eslint-disable-next-line no-console
-    console.log('WebApp listening to 8080');
+    console.log('WebApp listening to 8000');
 })();
