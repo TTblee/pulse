@@ -52,15 +52,17 @@ slackApp.message('hello', async ({ message, say }) => {
 
     const startSurvey = new StartSurvey(userId);
     // Handle cases where user has already started a survey, or has already taken it.
-    if (responseCollection.hasResponse(userId)) {
-        const response = responseCollection.getResponse(userId);
-        if (response.isSubmitted()) {
-            say(startSurvey.getSurveyAlreadyTakenMessage());
-            return;
-        }
-        say(startSurvey.getSurveyAlreadyStartedMessage());
-        return;
-    }
+
+    // TODO uncomment this after make week
+    // if (responseCollection.hasResponse(userId)) {
+    //     const response = responseCollection.getResponse(userId);
+    //     if (response.isSubmitted()) {
+    //         say(startSurvey.getSurveyAlreadyTakenMessage());
+    //         return;
+    //     }
+    //     say(startSurvey.getSurveyAlreadyStartedMessage());
+    //     return;
+    // }
 
     ensureSurveyAnswerExists(userId);
     await say(startSurvey.getEntryMessage());
@@ -73,9 +75,11 @@ slackApp.action(StartSurvey.GetSurveyAction(), async ({
     ack, say, body,
 }) => {
     ack();
+    const userId = body.user.id;
     await deletePreviousSurveyQuestion(body.container.message_ts, body.channel.id);
+    setSurveyAnswer(userId, Response.START_SURVEY, 'value_does_not_matter');
     const whatTeamQuestion = new WhatTeamQuestion();
-    say(whatTeamQuestion.getMessage());
+    await sendSurveyQuestion(userId, whatTeamQuestion, say);
 });
 
 slackApp.action({ action_id: WhatTeamQuestion.GetSurveyAction() }, async ({ ack, say, body }) => {
@@ -83,9 +87,11 @@ slackApp.action({ action_id: WhatTeamQuestion.GetSurveyAction() }, async ({ ack,
     const userId = body.user.id;
     // Note: only uses body.original_message when it is a callback_id action
     setSurveyAnswer(userId, Response.WHAT_TEAM, body.actions[0].selected_option.value);
+
     await deletePreviousSurveyQuestion(body.message.ts, body.channel.id);
+
     const moodQuestion = new MoodQuestion();
-    say(moodQuestion.getMessage());
+    await sendSurveyQuestion(userId, moodQuestion, say);
 });
 
 slackApp.action({ callback_id: MoodQuestion.GetSurveyAction() }, async ({
@@ -94,9 +100,11 @@ slackApp.action({ callback_id: MoodQuestion.GetSurveyAction() }, async ({
     ack();
     const userId = body.user.id;
     setSurveyAnswer(userId, Response.MOOD, body.actions[0].value);
+
     await deletePreviousSurveyQuestion(body.original_message.ts, body.channel.id);
+
     const companyQuestion = new CompanyQuestion();
-    say(companyQuestion.getMessage());
+    await sendSurveyQuestion(userId, companyQuestion, say);
 });
 
 slackApp.action({ callback_id: CompanyQuestion.GetSurveyAction() }, async ({
@@ -105,10 +113,11 @@ slackApp.action({ callback_id: CompanyQuestion.GetSurveyAction() }, async ({
     ack();
     const userId = body.user.id;
     setSurveyAnswer(userId, Response.COMPANY, body.actions[0].value);
+
     await deletePreviousSurveyQuestion(body.original_message.ts, body.channel.id);
 
     const teamQuestion = new TeamQuestion();
-    say(teamQuestion.getMessage());
+    await sendSurveyQuestion(userId, teamQuestion, say);
 });
 
 slackApp.action({ callback_id: TeamQuestion.GetSurveyAction() }, async ({
@@ -117,10 +126,11 @@ slackApp.action({ callback_id: TeamQuestion.GetSurveyAction() }, async ({
     ack();
     const userId = body.user.id;
     setSurveyAnswer(userId, Response.TEAM, body.actions[0].value);
+
     await deletePreviousSurveyQuestion(body.original_message.ts, body.channel.id);
 
     const individualQuestion = new IndividualQuestion();
-    say(individualQuestion.getMessage());
+    await sendSurveyQuestion(userId, individualQuestion, say);
 });
 
 slackApp.action({ callback_id: IndividualQuestion.GetSurveyAction() }, async ({
@@ -128,13 +138,41 @@ slackApp.action({ callback_id: IndividualQuestion.GetSurveyAction() }, async ({
 }) => {
     ack();
     const userId = body.user.id;
-    setSurveyAnswer(userId, Response.TEAM, body.actions[0].value);
+    setSurveyAnswer(userId, Response.INDIVIDUAL, body.actions[0].value);
+
     await deletePreviousSurveyQuestion(body.original_message.ts, body.channel.id);
 
-    console.log(responseCollection.getResponse(userId));
-    say('You’ve finished the survey!');
+    await say('You’ve finished the survey! :tada:');
+
+    const userResponse = responseCollection.getResponse(userId);
+    const submission = userResponse.submit();
+    if (submission) {
+        await say({
+            blocks: [{
+                type: 'section',
+                text: {
+                    type: 'mrkdwn',
+                    text: `Your response has been saved!\nHere’s the data that we saved from you:\`\`\`\n\n${JSON.stringify(userResponse)}\`\`\``,
+                },
+                accessory: {
+                    type: 'button',
+                    text: {
+                        type: 'plain_text',
+                        text: 'Delete this message',
+                    },
+                    style: 'danger',
+                    action_id: 'delete_message',
+                    value: 'delete',
+                },
+            }],
+        });
+    }
 });
 
+slackApp.action('delete_message', async ({ body, ack }) => {
+    ack();
+    await deletePreviousSurveyQuestion(body.container.message_ts, body.channel.id);
+});
 
 (async () => {
     await slackApp.start(process.env.PORT || 3000);

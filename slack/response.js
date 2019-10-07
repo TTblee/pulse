@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 class Response {
     constructor() {
         // Survey Question time tracking
@@ -10,18 +12,41 @@ class Response {
         this.questionStartTime = null;
     }
 
-    getResponses() {
-        const {
-            mood, team, company, individual, onWhatTeam,
-        } = this;
+    getAnswers() {
+        return this.answers;
+    }
 
-        return {
-            mood, team, company, individual, onWhatTeam,
-        };
+    getQuestionTimes() {
+        return this.questionTimes;
     }
 
     isSubmitted() {
         return this.isResponseSubmitted;
+    }
+
+    async submit() {
+        this.isResponseSubmitted = true;
+        this.questionStartTime = undefined;
+
+        const startSurveyElapsedTime = this.questionTimes[Response.START_SURVEY];
+        const questionTimesList = Object.values(this.questionTimes);
+        const totalInteractionElapsedTime = questionTimesList
+            .reduce((prevValue, currentValue) => prevValue + currentValue, 0);
+
+        const totalSurveyElapsedTime = totalInteractionElapsedTime - startSurveyElapsedTime;
+
+        Object.assign(this, {
+            total_interaction_elapsed_time: totalInteractionElapsedTime,
+            total_survey_elapsed_time: totalSurveyElapsedTime,
+        });
+
+        try {
+            fs.appendFileSync('response.txt', `${JSON.stringify(this)}\n`);
+            return true;
+        } catch (error) {
+            console.log(error);
+            return false;
+        }
     }
 
     startResponseTimeForQuestion(questionKey) {

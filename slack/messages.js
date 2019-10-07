@@ -52,7 +52,7 @@ class StartSurvey extends UserInputMessage {
         return {
             blocks: [
                 createTextSection({
-                    message: `Hey ${getSlackUserString(this.userId)}! Thanks for taking the time to take this survey. :blush:\nThis survey is completely anonymous; team information is *ONLY* collected to scope survey participation distribution.\nYou cannot undo answers, so ensure the answer you choose is correct!`,
+                    message: `Hey ${getSlackUserString(this.userId)}! Thanks for taking the time to take this survey. :blush:\n\nA few notes about this survey:\n• This survey is completely anonymous; team information is collected solely to scope participation distribution.\n• *You cannot undo answers*, so ensure the answer you choose is correct!`,
                 }),
                 DIVIDER,
             ],
@@ -64,7 +64,7 @@ class StartSurvey extends UserInputMessage {
             blocks: [
 
                 createTextSection({
-                    message: 'The survey only takes 10s - 20s to complete.',
+                    message: 'The survey only takes 15s - 20s to complete.',
                     button: {
                         text: 'Start survey',
                         actionId: 'start_survey',
@@ -93,9 +93,8 @@ class WhatTeamQuestion extends UserInputMessage {
         return Response.WHAT_TEAM;
     }
 
-    constructor() {
-        super();
-        this.options = [{
+    getSelectOptions() {
+        const options = [{
             text: 'Engineering',
             value: 'engineering',
         }, {
@@ -117,9 +116,32 @@ class WhatTeamQuestion extends UserInputMessage {
             text: 'Product',
             value: 'product',
         }, {
+            text: 'Legal',
+            value: 'legal',
+        }, {
+            text: 'People',
+            value: 'people',
+        }]
+        // Sort alphabetically by text
+            .sort(({ text: valueA }, { text: valueB }) => {
+                if (valueA < valueB) {
+                    return -1;
+                }
+                return 1;
+            });
+
+        // Add option for missing teams
+        options.push({
             text: 'Tell @blee your team’s not on here',
             value: 'not-on-list',
-        }];
+        });
+
+        return options;
+    }
+
+    constructor() {
+        super();
+        this.options = this.getSelectOptions();
     }
 
     getMessage() {
@@ -191,7 +213,7 @@ class MoodQuestion extends UserInputMessage {
             text: 'What is your mood?',
             attachments: [
                 {
-                    text: 'Choose a mood that most describes how you are feeling at this moment.',
+                    text: '_Choose a mood that most describes how you are feeling at this moment._',
 
                     callback_id: MoodQuestion.GetSurveyAction(),
                     color: '#3AA3E3',
@@ -214,11 +236,11 @@ class Plus1Minus1Question extends UserInputMessage {
         super();
         this.options = [
             {
-                value: '-1',
-                text: '-1 - :thumbsdown:',
-            }, {
                 value: '1',
                 text: '+1 - :thumbsup:',
+            }, {
+                value: '-1',
+                text: '-1 - :thumbsdown:',
             },
         ];
     }
@@ -235,10 +257,10 @@ class CompanyQuestion extends Plus1Minus1Question {
 
     getMessage() {
         return {
-            text: 'How are things for you going on a *company-level*?',
+            text: 'How are things going for you on a *company-level*?',
             attachments: [
                 {
-                    text: 'Choose the answer that most describes how you are feeling at this moment.',
+                    text: '_Choose the answer that most describes how you are feeling at this moment._',
 
                     callback_id: CompanyQuestion.GetSurveyAction(),
                     color: '#3AA3E3',
@@ -266,10 +288,10 @@ class TeamQuestion extends Plus1Minus1Question {
 
     getMessage() {
         return {
-            text: 'How are things for you going on a *team-level*?',
+            text: 'How are things going for you on a *team-level*?',
             attachments: [
                 {
-                    text: 'Choose the answer that most describes how you are feeling at this moment.',
+                    text: '_Choose the answer that most describes how you are feeling at this moment._',
 
                     callback_id: TeamQuestion.GetSurveyAction(),
                     color: '#3AA3E3',
@@ -297,10 +319,10 @@ class IndividualQuestion extends Plus1Minus1Question {
 
     getMessage() {
         return {
-            text: 'How are things for you going on a *team-level*?',
+            text: 'How are things going for you on a *individual-level*?',
             attachments: [
                 {
-                    text: 'Choose the answer that most describes how you are feeling at this moment.',
+                    text: '_Choose the answer that most describes how you are feeling at this moment._',
 
                     callback_id: IndividualQuestion.GetSurveyAction(),
                     color: '#3AA3E3',
