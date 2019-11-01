@@ -33,6 +33,8 @@ class Response {
 
         const totalSurveyElapsedTime = totalInteractionElapsedTime - startSurveyElapsedTime;
         this.totalSurveyElapsedTime = totalSurveyElapsedTime;
+
+        this.isResponseSubmitted = true;
     }
 
     async submit() {

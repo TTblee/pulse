@@ -1,4 +1,5 @@
 const { Response } = require('./response');
+const { OPT_IN_WHAT_TEAM_ACTION_ID } = require('./actions');
 
 const getSlackUserString = (user) => `<@${user}>`;
 const DIVIDER = {
@@ -25,8 +26,8 @@ const createTextSection = ({ message, button = null }) => (
 );
 
 class UserInputMessage {
-    static GetSurveyAction() {
-        throw new Error('has not implemented GetSurveyAction');
+    static GetActionId() {
+        throw new Error('has not implemented GetActionId');
     }
 
     getId() {
@@ -35,7 +36,7 @@ class UserInputMessage {
 }
 
 class StartSurvey extends UserInputMessage {
-    static GetSurveyAction() {
+    static GetActionId() {
         return 'start_survey';
     }
 
@@ -85,7 +86,7 @@ class StartSurvey extends UserInputMessage {
 }
 
 class WhatTeamQuestion extends UserInputMessage {
-    static GetSurveyAction() {
+    static GetActionId() {
         return 'what_team_survey';
     }
 
@@ -160,7 +161,7 @@ class WhatTeamQuestion extends UserInputMessage {
                             text: 'Select an team',
                             emoji: true,
                         },
-                        action_id: WhatTeamQuestion.GetSurveyAction(),
+                        action_id: WhatTeamQuestion.GetActionId(),
                         options: this.options.map(({ text, value }) => (
                             {
                                 text: {
@@ -180,7 +181,7 @@ class WhatTeamQuestion extends UserInputMessage {
 }
 
 class MoodQuestion extends UserInputMessage {
-    static GetSurveyAction() {
+    static GetActionId() {
         return 'survey_mood';
     }
 
@@ -215,7 +216,7 @@ class MoodQuestion extends UserInputMessage {
                 {
                     text: '_Choose a mood that most describes how you are feeling at this moment._',
 
-                    callback_id: MoodQuestion.GetSurveyAction(),
+                    callback_id: MoodQuestion.GetActionId(),
                     color: '#3AA3E3',
                     attachment_type: 'default',
                     actions: this.options.map(({ value, text }) => ({
@@ -247,7 +248,7 @@ class Plus1Minus1Question extends UserInputMessage {
 }
 
 class CompanyQuestion extends Plus1Minus1Question {
-    static GetSurveyAction() {
+    static GetActionId() {
         return 'survey_company';
     }
 
@@ -262,7 +263,7 @@ class CompanyQuestion extends Plus1Minus1Question {
                 {
                     text: '_Choose the answer that most describes how you are feeling at this moment._',
 
-                    callback_id: CompanyQuestion.GetSurveyAction(),
+                    callback_id: CompanyQuestion.GetActionId(),
                     color: '#3AA3E3',
                     attachment_type: 'default',
                     actions: this.options.map(({ value, text }) => ({
@@ -278,7 +279,7 @@ class CompanyQuestion extends Plus1Minus1Question {
 }
 
 class TeamQuestion extends Plus1Minus1Question {
-    static GetSurveyAction() {
+    static GetActionId() {
         return 'survey_team';
     }
 
@@ -293,7 +294,7 @@ class TeamQuestion extends Plus1Minus1Question {
                 {
                     text: '_Choose the answer that most describes how you are feeling at this moment._',
 
-                    callback_id: TeamQuestion.GetSurveyAction(),
+                    callback_id: TeamQuestion.GetActionId(),
                     color: '#3AA3E3',
                     attachment_type: 'default',
                     actions: this.options.map(({ value, text }) => ({
@@ -309,7 +310,7 @@ class TeamQuestion extends Plus1Minus1Question {
 }
 
 class IndividualQuestion extends Plus1Minus1Question {
-    static GetSurveyAction() {
+    static GetActionId() {
         return 'survey_individual';
     }
 
@@ -324,7 +325,7 @@ class IndividualQuestion extends Plus1Minus1Question {
                 {
                     text: '_Choose the answer that most describes how you are feeling at this moment._',
 
-                    callback_id: IndividualQuestion.GetSurveyAction(),
+                    callback_id: IndividualQuestion.GetActionId(),
                     color: '#3AA3E3',
                     attachment_type: 'default',
                     actions: this.options.map(({ value, text }) => ({
@@ -339,6 +340,107 @@ class IndividualQuestion extends Plus1Minus1Question {
     }
 }
 
+class OptInWhatTeamQuestion extends UserInputMessage {
+    static GetActionId() {
+        return OPT_IN_WHAT_TEAM_ACTION_ID;
+    }
+
+    getId() {
+        return 'what_team_opt_in';
+    }
+
+    getSelectOptions() {
+        const options = [{
+            text: 'Engineering',
+            value: 'engineering',
+        }, {
+            text: 'Culinary',
+            value: 'culinary',
+        }, {
+            text: 'Finance',
+            value: 'finance',
+        }, {
+            text: 'Analytics',
+            value: 'analytics',
+        }, {
+            text: 'Data Science',
+            value: 'data-science',
+        }, {
+            text: 'Design',
+            value: 'design',
+        }, {
+            text: 'Product',
+            value: 'product',
+        }, {
+            text: 'Legal',
+            value: 'legal',
+        }, {
+            text: 'People',
+            value: 'people',
+        }]
+        // Sort alphabetically by text
+            .sort(({ text: valueA }, { text: valueB }) => {
+                if (valueA < valueB) {
+                    return -1;
+                }
+                return 1;
+            });
+
+        // Add option for missing teams
+        options.push({
+            text: 'Tell @blee your team’s not on here',
+            value: 'not-on-list',
+        });
+
+        return options;
+    }
+
+    constructor() {
+        super();
+        this.options = this.getSelectOptions();
+    }
+
+    getMessage() {
+        return {
+            blocks: [
+                {
+                    type: 'section',
+                    text: {
+                        type: 'mrkdwn',
+                        text: 'What team are you on?',
+                    },
+                    accessory: {
+                        type: 'static_select',
+                        placeholder: {
+                            type: 'plain_text',
+                            text: 'Select an team',
+                            emoji: true,
+                        },
+                        action_id: OptInWhatTeamQuestion.GetActionId(),
+                        options: this.options.map(({ text, value }) => (
+                            {
+                                text: {
+                                    type: 'plain_text',
+                                    text,
+                                    emoji: true,
+                                },
+                                value,
+                            }
+                        )),
+
+                    },
+                },
+            ],
+        };
+    }
+}
+
 module.exports = {
-    StartSurvey, MoodQuestion, WhatTeamQuestion, CompanyQuestion, TeamQuestion, IndividualQuestion,
+    StartSurvey,
+    MoodQuestion,
+    WhatTeamQuestion,
+    CompanyQuestion,
+    TeamQuestion,
+    IndividualQuestion,
+    OptInWhatTeamQuestion,
 };

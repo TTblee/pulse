@@ -1,17 +1,23 @@
 const { App } = require('@slack/bolt');
-const DatabaseClient = require('./database-client');
 
-const databaseClient = new DatabaseClient();
-const { Response, ResponseCollection } = require('./slack-components/response');
+const DatabaseClientSingleton = require('./database-client');
+const { Response, ResponseCollection } = require('./components/response');
+require('dotenv').config();
+
+const databaseClient = DatabaseClientSingleton.getDatabaseClient();
 const {
     StartSurvey, MoodQuestion, WhatTeamQuestion, CompanyQuestion, TeamQuestion, IndividualQuestion,
-} = require('./slack-components/messages');
-require('dotenv').config();
+} = require('./components/messages');
 
 // Initializes your app with your bot token and signing secret
 const slackApp = new App({
     token: process.env.SLACK_BOT_TOKEN,
     signingSecret: process.env.SLACK_SIGNING_SECRET,
+    // Different endpoints for different things
+    endpoints: {
+        events: '/slack/events',
+        commands: '/slack/commands',
+    },
 });
 
 // UserId: Response object
@@ -73,7 +79,7 @@ slackApp.message('hello', async ({ message, say }) => {
     }, 300);
 });
 
-slackApp.action(StartSurvey.GetSurveyAction(), async ({
+slackApp.action(StartSurvey.GetActionId(), async ({
     ack, say, body,
 }) => {
     ack();
@@ -84,7 +90,7 @@ slackApp.action(StartSurvey.GetSurveyAction(), async ({
     await sendSurveyQuestion(userId, whatTeamQuestion, say);
 });
 
-slackApp.action({ action_id: WhatTeamQuestion.GetSurveyAction() }, async ({ ack, say, body }) => {
+slackApp.action({ action_id: WhatTeamQuestion.GetActionId() }, async ({ ack, say, body }) => {
     ack();
     const userId = body.user.id;
     // Note: only uses body.original_message when it is a callback_id action
@@ -96,7 +102,7 @@ slackApp.action({ action_id: WhatTeamQuestion.GetSurveyAction() }, async ({ ack,
     await sendSurveyQuestion(userId, moodQuestion, say);
 });
 
-slackApp.action({ callback_id: MoodQuestion.GetSurveyAction() }, async ({
+slackApp.action({ callback_id: MoodQuestion.GetActionId() }, async ({
     ack, say, body,
 }) => {
     ack();
@@ -109,7 +115,7 @@ slackApp.action({ callback_id: MoodQuestion.GetSurveyAction() }, async ({
     await sendSurveyQuestion(userId, companyQuestion, say);
 });
 
-slackApp.action({ callback_id: CompanyQuestion.GetSurveyAction() }, async ({
+slackApp.action({ callback_id: CompanyQuestion.GetActionId() }, async ({
     ack, say, body,
 }) => {
     ack();
@@ -122,7 +128,7 @@ slackApp.action({ callback_id: CompanyQuestion.GetSurveyAction() }, async ({
     await sendSurveyQuestion(userId, teamQuestion, say);
 });
 
-slackApp.action({ callback_id: TeamQuestion.GetSurveyAction() }, async ({
+slackApp.action({ callback_id: TeamQuestion.GetActionId() }, async ({
     ack, say, body,
 }) => {
     ack();
@@ -135,7 +141,7 @@ slackApp.action({ callback_id: TeamQuestion.GetSurveyAction() }, async ({
     await sendSurveyQuestion(userId, individualQuestion, say);
 });
 
-slackApp.action({ callback_id: IndividualQuestion.GetSurveyAction() }, async ({
+slackApp.action({ callback_id: IndividualQuestion.GetActionId() }, async ({
     ack, say, body,
 }) => {
     ack();
@@ -184,3 +190,5 @@ slackApp.action('delete_message', async ({ body, ack }) => {
     // eslint-disable-next-line no-console
     console.log('⚡️ Bolt app is running!');
 })();
+
+module.exports = slackApp;
